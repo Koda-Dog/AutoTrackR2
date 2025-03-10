@@ -640,12 +640,7 @@ function Send-ApiData {
 
     If ($null -ne $apiUrl){
         if ($apiUrl -notlike "*/register-kill") {
-            if ($apiUrl -like "*/"){
-                $apiUrl = $apiUrl + "register-kill"
-            }
-            if ($apiUrl -notlike "*/"){
-                $apiUrl = $apiUrl + "/register-kill"
-            }
+            $apiUrl = $apiUrl.TrimEnd("/") + "/register-kill"
         }
         Write-OutputData "LogInfo=ApiURL: $apiURL"
     }

@@ -367,7 +367,7 @@ namespace AutoTrackR2
             Grid.SetColumn(killTextBlock, 0);
             killGrid.Children.Add(killTextBlock);
 
-            if (eventType == "Kill")
+            if (eventType != "Other")
             {
                 // Create the Image for the profile
                 string urlToUse = string.IsNullOrEmpty(killParts[7]) ? "https://cdn.robertsspaceindustries.com/static/images/account/avatar_default_big.jpg" : killParts[7];
