@@ -32,12 +32,12 @@ namespace AutoTrackR2
             VisorWipeSlider.Value = ConfigManager.VisorWipe;
             VideoRecordSlider.Value = ConfigManager.VideoRecord;
             OfflineModeSlider.Value = ConfigManager.OfflineMode;
-            KillLogSlider.Value = ConfigManager.KillLog;
-            DeathLogSlider.Value = ConfigManager.DeathLog;
+            SoundONSlider.Value = ConfigManager.SoundON;
+            LocationDataSlider.Value = ConfigManager.LocationData;
             OtherLogSlider.Value = ConfigManager.OtherLog;
             ThemeSlider.Value = ConfigManager.Theme;
 
-            ApplyToggleModeStyle(OfflineModeSlider.Value, VisorWipeSlider.Value, VideoRecordSlider.Value, KillLogSlider.Value, DeathLogSlider.Value, OtherLogSlider.Value);
+            ApplyToggleModeStyle(OfflineModeSlider.Value, VisorWipeSlider.Value, VideoRecordSlider.Value, SoundONSlider.Value, LocationDataSlider.Value, OtherLogSlider.Value);
         }
 
         // Method to change the logo image in MainWindow
@@ -68,7 +68,7 @@ namespace AutoTrackR2
 
         // This method will set the loaded config values to the UI controls
         public void SetConfigValues(string logFile, string apiUrl, string apiKey, string videoPath,
-                                     int visorWipe, int videoRecord, int offlineMode, int killLog, int deathLog, int otherLog, int theme)
+                                     int visorWipe, int videoRecord, int offlineMode, int soundON, int locationData, int otherLog, int theme)
         {
             // Set the textboxes with the loaded values
             LogFilePath.Text = logFile;
@@ -80,8 +80,8 @@ namespace AutoTrackR2
             VideoRecordSlider.Value = videoRecord;
             VisorWipeSlider.Value = visorWipe;
             OfflineModeSlider.Value = offlineMode;
-            KillLogSlider.Value = killLog;
-            DeathLogSlider.Value = deathLog;
+            SoundONSlider.Value = soundON;
+            LocationDataSlider.Value = locationData;
             OtherLogSlider.Value = otherLog;
 
             // Handle themes
@@ -95,14 +95,14 @@ namespace AutoTrackR2
             }
         }
 
-        private void ApplyToggleModeStyle(double offlineModeValue, double visorWipeValue, double videoRecordValue, double killLogValue, double deathLogvalue, double otherLogValue)
+        private void ApplyToggleModeStyle(double offlineModeValue, double visorWipeValue, double videoRecordValue, double soundONValue, double locationDatavalue, double otherLogValue)
         {
             // Get the slider
             Slider offlineModeSlider = OfflineModeSlider;
             Slider visorWipeSlider = VisorWipeSlider;
             Slider videoRecordSlider = VideoRecordSlider;
-            Slider killLogSlider = KillLogSlider;
-            Slider deathLogSlider = DeathLogSlider;
+            Slider soundONSlider = SoundONSlider;
+            Slider locationDataSlider = LocationDataSlider;
             Slider otherLogSlider = OtherLogSlider;
 
             // Set the appropriate style based on value (0 or 1)
@@ -121,14 +121,14 @@ namespace AutoTrackR2
                 videoRecordSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
             }
 
-            if (killLogValue == 0)
+            if (soundONValue == 0)
             {
-                killLogSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
+                soundONSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
             }
 
-            if (deathLogvalue == 0)
+            if (locationDatavalue == 0)
             {
-                deathLogSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
+                locationDataSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
             }
 
             if (otherLogValue == 0)
@@ -547,8 +547,8 @@ namespace AutoTrackR2
                 writer.WriteLine($"VisorWipe={(int)VisorWipeSlider.Value}");
                 writer.WriteLine($"VideoRecord={(int)VideoRecordSlider.Value}");
                 writer.WriteLine($"OfflineMode={(int)OfflineModeSlider.Value}");
-                writer.WriteLine($"KillLog={(int)KillLogSlider.Value}");
-                writer.WriteLine($"DeathLog={(int)DeathLogSlider.Value}");
+                writer.WriteLine($"SoundON={(int)SoundONSlider.Value}");
+                writer.WriteLine($"LocationData={(int)LocationDataSlider.Value}");
                 writer.WriteLine($"OtherLog={(int)OtherLogSlider.Value}");
                 writer.WriteLine($"Theme={(int)ThemeSlider.Value}"); // Assumes you are saving the theme slider value (0, 1, or 2)
             }

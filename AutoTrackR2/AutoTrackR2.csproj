@@ -13,6 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CSCore" Version="1.2.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Assets\AVSQN.png" />
     <None Remove="Assets\BlightVeil.png" />
     <None Remove="Assets\BOBGREL.png" />
@@ -29,16 +33,19 @@
     <None Remove="Assets\SHADOWMOSES.png" />
     <None Remove="Assets\VOX.png" />
     <None Remove="Assets\WRITH.png" />
-    <None Remove="config.ini" />
     <None Remove="Fonts\Orbitron-Bold.ttf" />
     <None Remove="Fonts\Roboto-Regular.ttf" />
+    <None Remove="Assets\EnemyPlayer_Kill.mp3" />
+    <None Remove="Assets\EnemyShip_Destruction.mp3" />
+    <None Remove="Assets\EnemyShip_SoftDeath.mp3" />
+    <None Remove="Assets\PlayerSpawn.mp3" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="AutoTrackR2.ico" />
   </ItemGroup>
 
-  <ItemGroup>
+<ItemGroup>
     <Resource Include="Assets\BlightVeil.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
@@ -106,12 +113,29 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="KillTrackR_MainScript.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="update.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <AppData Include="Assets\videorecord.ahk" CopyToOutputDirectory="PreserveNewest" />
+    <AppData Include="Assets\visorwipe.ahk" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="KillTrackR_MainScript.ps1" CopyToOutputDirectory="Always" />
+    <None Update="update.ps1" CopyToOutputDirectory="Always" />
+    <None Include="Assets\EnemyPlayer_Kill.mp3" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Assets\EnemyShip_Destruction.mp3" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Assets\EnemyShip_SoftDeath.mp3" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Assets\PlayerSpawn.mp3" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CopyAppData" AfterTargets="Build">
+    <PropertyGroup>
+      <AppDataPath>$(LocalAppData)\AutoTrackR2</AppDataPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(AppDataPath)" />
+
+    <Copy SourceFiles="@(AppData)" 
+          DestinationFolder="$(AppDataPath)" 
+          SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

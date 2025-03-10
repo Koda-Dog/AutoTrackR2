@@ -2,7 +2,7 @@
 # GitHub: https://github.com/BubbaGumpShrump/AutoTrackR2
 
 # Script version
-$script:TrackRver = "2.07-koda-mod"
+$script:TrackRver = "2.07-koda-soundandservers"
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -84,6 +84,8 @@ $script:VehiclePattern = "<(?<timestamp>[^>]+)> \[Notice\] <Vehicle Destruction>
     "advanced from destroy level (?<destroy_level_from>\d+) to (?<destroy_level_to>\d+) " +
     "caused by '(?<caused_by>[^']+)' \[\d+\] with '(?<damage_type>[^']+)'"
 
+$script:SpawnPattern = "<(?<timestamp>[^>]+)> \[CSessionManager::OnClientSpawned\] Spawned!"
+
 # Lookup Patterns
 $script:joinDatePattern = '<span class="label">Enlisted</span>\s*<strong class="value">([^<]+)</strong>'
 $script:ueePattern = '<p class="entry citizen-record">\s*<span class="label">UEE Citizen Record<\/span>\s*<strong class="value">#?(n\/a|\d+)<\/strong>\s*<\/p>'
@@ -111,17 +113,21 @@ function Get-ConfigurationSettings {
     } 
 
     # Set missing config
-    $logSettings = @('OfflineMode', 'KillLog', 'DeathLog', 'OtherLog', 'VisorWipe', 'VideoRecord')
+    #$logSettings = @('OfflineMode', 'KillLog', 'DeathLog', 'OtherLog', 'VisorWipe', 'VideoRecord')
+    $logSettings = @('OfflineMode', 'OtherLog', 'VisorWipe', 'VideoRecord')
     foreach ($setting in $logSettings) {
         if (-not $config.ContainsKey($setting)) {
             $config.$($setting) = $false
-            Write-OutputData "LogInfo=Missing setting: $($setting) Set to false"
+            Write-OutputData "LogInfo=Missing setting: $($setting) Set to false" -force
         } elseif ($config.$($setting) -eq 1) {
             $config.$($setting) = $true
         } else {
             $config.$($setting) = $false
         }
     }
+    # Set KillLog and DeathLog always true
+    $config.KillLog = $true
+    $config.DeathLog = $true
 
     # Check if the VisorWipe script exists
     if ($config.VisorWipe) {
@@ -149,9 +155,9 @@ function Get-ConfigurationSettings {
 
 function Import-CsvData {
     param (
-        [bool]$killLog = $false,
-        [bool]$deathLog = $false,
-        [bool]$otherLog = $false,
+        [bool]$killLog = $true,
+        [bool]$deathLog = $true,
+        [bool]$otherLog = $true,
         [string]$csvFile
     )
     # Define the header for the new CSV file 
@@ -159,7 +165,7 @@ function Import-CsvData {
 
     # Check if the CSV file exists
     if (-Not (Test-Path $csvFile)) {
-        Write-OutputData "LogInfo=CSV file not found. Creating a new file with headers..."     
+        Write-OutputData "LogInfo=CSV file not found. Creating a new file with headers..." 
         # Create a new CSV file with the defined headers
         $csvHeader | Out-File -FilePath $csvFile -Encoding utf8
     }
@@ -218,19 +224,19 @@ function Import-CsvData {
                     "Kill" {
                         if ($killLog) {
                             Update-Tally $row.Type
-                            Write-OutputData "NewKill=throwaway,$($row.EnemyPilot),$($row.EnemyShip),$($row.OrgAffiliation),$($row.Enlisted),$($row.RecordNumber),$($row.KillTime),$($row.PFP)"
+                            Write-OutputData "Kill=throwaway,$($row.EnemyPilot),$($row.EnemyShip),$($row.OrgAffiliation),$($row.Enlisted),$($row.RecordNumber),$($row.KillTime),$($row.PFP)"
                         }
                     }
                     "Death" {
                         if ($deathLog) {
                             Update-Tally $row.Type
-                            Write-OutputData "NewDeath=throwaway,$($row.EnemyPilot),$($row.EnemyShip),$($row.OrgAffiliation),$($row.Enlisted),$($row.RecordNumber),$($row.KillTime),$($row.PFP)"
+                            Write-OutputData "Death=throwaway,$($row.EnemyPilot),$($row.EnemyShip),$($row.OrgAffiliation),$($row.Enlisted),$($row.RecordNumber),$($row.KillTime),$($row.PFP)"
                         }
                     }
                     default {
                         if ($otherLog) {
                             Update-Tally $row.Type
-                            Write-OutputData "NewOther=throwaway,throwaway,throwaway,throwaway,throwaway,throwaway,$($row.KillTime),throwaway,$($row.Method)"
+                            Write-OutputData "Other=throwaway,throwaway,throwaway,throwaway,throwaway,throwaway,$($row.KillTime),throwaway,$($row.Method)"
                         }
                     }
                 }
@@ -262,11 +268,22 @@ function Read-LogEntry {
 		Write-OutputData "PlayerName=$script:UserName"
 	}
 
+    # Spawn event
+    if (-not $initialised -and $line -match $script:SpawnPattern) {
+        Write-OutputData "PlayerSpawn"
+        Write-OutputData "LogInfo=PlayerSpawn"
+    }
+
     # Vehicle events
     if ($line -match $script:VehiclePattern) {
         # Access the named capture groups from the regex match
         $vehicle_id = $matches['vehicle']
         $location = $matches['vehicle_zone']
+
+        # Vehicle Destruction Level
+        if (-not $initialised -and $($matches['caused_by']) -like $script:UserName) {
+            Write-OutputData "VehicleDestructionLevel=$($matches['destroy_level_to'])" -force
+        }
     }
 
     # Get Loadout
@@ -285,14 +302,14 @@ function Read-LogEntry {
 
     #Get Game Mode
 	if ($line -match $script:PuPattern) { 
-        Write-OutputData "LogInfo=Gamerules: $($matches.Gamerules)"  
+        Write-OutputData "LogInfo=Gamerules: $($matches.Gamerules)"
         if ($($matches.Gamerules) -match "SC_Default") {
-		$script:GameMode = "PU"
+            $script:GameMode = "PU"
 		    
         }else{
             $script:GameMode = "$($matches.Gamerules)"
-	}
-		Write-OutputData "GameMode=$script:GameMode"
+        }
+        Write-OutputData "GameMode=$script:GameMode"
 	}
 
 #	if (-not $initialised -and $line -match $script:AcPattern) {
@@ -317,8 +334,7 @@ function Read-LogEntry {
 			$csvData = New-CsvData -type $type -eventData $eventData -playerInfo $playerInfo
 			if ($type -eq "Kill" -and $null -ne $config.ApiUrl -and -not $config.OfflineMode) {
                 Write-OutputData "LogInfo=Send $type data to server"
-				Send-ApiData -csvData $csvData -location $location -apiUrl $config.ApiUrl -apiKey $config.ApiKey
-                $csvData.Logged = "API"
+				$csvData.Logged = Send-ApiData -csvData $csvData -location $location -apiUrl $config.ApiUrl -apiKey $config.ApiKey
 			}
 			Write-CSVData -csvData $csvData -csvFile $script:CSVFile
 	
@@ -563,7 +579,7 @@ function Get-PlayerInfo {
         $script:PlayerCache[$playerName] = $playerInfo
         return $playerInfo
     } catch {
-		Write-Warning "Error retrieving player information for PlayerName: $_"
+		Write-Warning "Unable retrieving player information for PlayerName: $_"
         return $null
     }
 }
@@ -605,16 +621,20 @@ function Send-ApiData {
     }
 
     $sendData = @{
-        victim_ship		= $csvData.EnemyShip
-        victim			= $csvData.EnemyPilot
-        enlisted		= $csvData.Enlisted
-        rsi				= $csvData.RecordNumber
-        weapon			= $csvData.Weapon
-        method			= $csvData.Method
-        loadout_ship	= $csvData.Ship
-        game_version	= $csvData.GameVersion
+        eventtype       = $csvData.Type
+        eventtime       = $csvData.KillTime
+        enemypilot      = $csvData.EnemyPilot
+        enemyship       = $csvData.EnemyShip
+        enlisted        = $csvData.Enlisted
+        recordnumber    = $csvData.RecordNumber
+        orgaffiliation  = $playerInfo.Orgs
+        weapon          = $eventData.Weapon
+        loadout_ship    = $eventData.playerShip
+        method          = $eventData.Method
         gamemode		= $csvData.Mode
-        trackr_version	= $csvData.TrackRver
+        game_version    = $csvData.GameVersion
+        trackr_version  = $csvData.TrackRver
+        PFP             = $playerInfo.PFP
         location        = $location
     }
 
@@ -634,10 +654,12 @@ function Send-ApiData {
         $null = Invoke-RestMethod -Uri $apiUrl -Method Post -Body ($sendData | ConvertTo-Json -Depth 5) -Headers $headers
         return "API"
     } catch {
-        Write-Warning "LogInfo=API-Error: $_"
+        Write-Warning "API-Error: $_"
         return "Err-Local"
     }
 }
+
+
 
 function Write-CSVData {
     param (
@@ -661,7 +683,8 @@ function Invoke-PostEventActions{
         [string]$damageType
     )
 
-    $sleepTimer = 10
+    #$sleepTimer = 10       # TEST: Shorter period when Passenger
+    $sleepTimer = 3        
 
     if ($config.VisorWipe -and $victimShip -ne "Passenger" -and $damageType -notlike "*Bullet*" -and $type -ne "Other") {
         Write-OutputData "LogInfo=Execute VisorWipe"
@@ -673,7 +696,8 @@ function Invoke-PostEventActions{
     if ($config.VideoRecord -and $victimShip -ne "Passenger" -and $damageType -ne "Suicide") {
         Write-OutputData "LogInfo=Execute VideoRecord"
         Start-Sleep 2
-        $sleepTimer -= 9
+        $sleepTimer -= 2
+        #$sleepTimer -= 9   # TEST: Shorter period when Passenger
         & "$script:VideoRecordFile"
         Start-Sleep 7
 
@@ -690,9 +714,12 @@ function Invoke-PostEventActions{
 
 function Write-OutputData {
     param (
-        [string]$data
+        [string]$data,
+        [switch]$force
     )
-    if ($data -ne $script:WritheCache) {
+    if($force){
+        Write-Host $data
+    }elseif ($data -ne $script:WritheCache) {
         if($script:DebugLVL -eq 1){
             Write-Host $data
         }else{

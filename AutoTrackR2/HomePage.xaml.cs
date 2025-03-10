@@ -7,6 +7,8 @@ using System.IO;
 using System.Windows.Documents;
 using System.Globalization;
 using System.Windows.Media.Imaging;
+using CSCore.Codecs;
+using CSCore.SoundOut;
 
 namespace AutoTrackR2
 {
@@ -136,15 +138,38 @@ namespace AutoTrackR2
                                 }
                                 else if (e.Data.Contains("NewKill="))
                                 {
+                                    if (ConfigManager.SoundON == 1) { PlaySound("Kill"); }  // Play sound if it is a NewKill
                                     HandleKillEvent("Kill", e.Data);
                                 }
-                                else if (e.Data.Contains("NewDeath="))
+                                else if (e.Data.Contains("Kill="))
+                                {
+                                    HandleKillEvent("Kill", e.Data);
+                                }
+                                else if (e.Data.Contains("Death="))
                                 {
                                     HandleKillEvent("Death", e.Data);
                                 }
-                                else if (e.Data.Contains("NewOther="))
+                                else if (e.Data.Contains("Other="))
                                 {
                                     HandleKillEvent("Other", e.Data);
+                                }
+                                else if (e.Data.Contains("VehicleDestructionLevel="))
+                                {
+                                    string level = e.Data.Split('=')[1].Trim();
+                                    // Vehicle SoftDeath
+                                    if (level.Contains("1"))
+                                    {
+                                        if (ConfigManager.SoundON == 1) { PlaySound("SoftDeath"); } 
+                                    }
+                                    // Vehicle Destruction
+                                    else if (level.Contains("2"))
+                                    {
+                                        if (ConfigManager.SoundON == 1) { PlaySound("Destruction"); }
+                                    }
+                                }
+                                else if (e.Data.Contains("PlayerSpawn"))
+                                {
+                                    if (ConfigManager.SoundON == 1) { PlaySound("PlayerSpawn"); } 
                                 }
 
                                 else
@@ -376,5 +401,60 @@ namespace AutoTrackR2
             // Add the new Border to the StackPanel inside the Border
             KillFeedStackPanel.Children.Insert(0, killBorder);
         }
+
+        // Method for playing sounds based on the event type
+        private void PlaySound(string eventType)
+        {
+
+            // Determine the MP3 file based on the event type
+            string mp3FilePath = GetMp3FilePath(eventType);
+
+            // ÜCheck whether the file exists
+            if (string.IsNullOrEmpty(mp3FilePath) || !File.Exists(mp3FilePath))
+            {
+                string currentText = DebugPanel.Text;
+                DebugPanel.Text = $"WARNING: File for event type '{eventType}' not found: {mp3FilePath}" + Environment.NewLine + currentText;
+                //return; // Ensuring the continuation of the programme
+            }
+            else
+            {
+                // Start playback in a separate thread
+                Thread audioThread = new Thread(() =>
+                {
+                    using (var soundOut = new WasapiOut()) // Uses Windows Audio Session API (WASAPI)
+                    using (var audioFile = CodecFactory.Instance.GetCodec(mp3FilePath))
+                    {
+                        soundOut.Initialize(audioFile);
+                        soundOut.Play();
+
+                        // Wait until playback is complete
+                        while (soundOut.PlaybackState == PlaybackState.Playing)
+                        {
+                            Thread.Sleep(500);
+                        }
+                    }
+                });
+
+                audioThread.IsBackground = true; // Background thread
+                audioThread.Start();
+            }
+
+        }
+
+        // Auxiliary method for determining the file path based on the event type
+        private string GetMp3FilePath(string eventType)
+        {
+            string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+            return eventType switch
+            {
+                "Kill" => Path.Combine(baseDirectory, "Assets/EnemyPlayer_Kill.mp3"),
+                "SoftDeath" => Path.Combine(baseDirectory, "Assets/EnemyShip_SoftDeath.mp3"),
+                "Destruction" => Path.Combine(baseDirectory, "Assets/EnemyShip_Destruction.mp3"),
+                "PlayerSpawn" => Path.Combine(baseDirectory, "Assets/PlayerSpawn.mp3"),
+                _ => null // Unknown event type
+            };
+        }
+
     }
 }
