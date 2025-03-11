@@ -9,7 +9,7 @@ namespace AutoTrackR2
 {
     public partial class UpdatePage : UserControl
     {
-        private string currentVersion = "v2.07-koda-soundandservers";
+        private string currentVersion = "2.07-koda-soundandservers_MEDUSA_20250311_004";
         private string latestVersion;
 
         public UpdatePage()

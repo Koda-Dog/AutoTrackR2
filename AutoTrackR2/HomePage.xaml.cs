@@ -100,7 +100,14 @@ namespace AutoTrackR2
                             Dispatcher.Invoke(() =>
                             {
                                 // Parse and display key-value pairs in the OutputTextBox
-                                if (e.Data.Contains("PlayerName="))
+                                if (e.Data.Contains("LogERROR="))
+                                {
+                                    string LogERROR = e.Data.Split('=')[1].Trim(); 
+                                    string currentText = DebugPanel.Text;
+                                    DebugPanel.Text = "An error has occurred: " + LogERROR + Environment.NewLine + currentText;
+                                    StopButton_Click(null, null);
+                                }
+                                else if (e.Data.Contains("PlayerName="))
                                 {
                                     string pilotName = e.Data.Split('=')[1].Trim();
                                     PilotNameTextBox.Text = pilotName; // Update the Button's Content
@@ -153,7 +160,7 @@ namespace AutoTrackR2
                                 {
                                     HandleKillEvent("Other", e.Data);
                                 }
-                                else if (e.Data.Contains("VehicleDestructionLevel="))
+                                else if (e.Data.Contains("VehicleDestructionEnemy="))
                                 {
                                     string level = e.Data.Split('=')[1].Trim();
                                     // Vehicle SoftDeath
@@ -166,6 +173,14 @@ namespace AutoTrackR2
                                     {
                                         if (ConfigManager.SoundON == 1) { PlaySound("Destruction"); }
                                     }
+                                }
+                                else if (e.Data.Contains("VehicleDestructionSelf="))
+                                {
+                                    // Preventin an Output
+                                }
+                                else if (e.Data.Contains("VehicleDestructionSuicide="))
+                                {
+                                    // Preventin an Output
                                 }
                                 else if (e.Data.Contains("PlayerSpawn"))
                                 {
@@ -361,7 +376,7 @@ namespace AutoTrackR2
             
             // Define two columns in the Grid: one for the text and one for the image
             killGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });  // Text column
-             killGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });  // Image column
+            killGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });  // Image column
 
             // Add the TextBlock to the first column of the Grid
             Grid.SetColumn(killTextBlock, 0);

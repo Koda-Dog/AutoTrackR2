@@ -2,7 +2,7 @@
 # GitHub: https://github.com/BubbaGumpShrump/AutoTrackR2
 
 # Script version
-$script:TrackRver = "2.07-koda-soundandservers"
+$script:TrackRver = "2.07-koda-soundandservers_20250311_004"
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -35,13 +35,14 @@ $script:LastKillUpdated = Get-Date
 $script:PlayerCache = @{}
 $script:UrlCache = @{}
 $script:UserName = $null
-$script:Loadout = $script:FpsLoadout
+$script:Loadout = "unknown"
 $script:GameMode = $null
 $script:GameVersion = $null
+$script:VehicleCache = @{}
 
 # Configurable script variables
 $script:DateFormat = "dd MMM yyyy HH:mm UTC"
-$script:PassengerTimeOut = 60           # How long could be a Kill in the same ship a Passenger [sec]
+$script:PassengerTimeOut = 15            # How long could be a Kill in the same ship a Passenger [sec]
 $script:FpsLoadout = "Person"           # Shipnames for FPS
 
 
@@ -68,7 +69,7 @@ $prefixes = @(
 )
 
 # Define the regex pattern to extract information
-$script:KillPattern = "<Actor Death> CActor::Kill: '(?<VictimPilot>[^']+)' \[\d+\] in zone '(?<VictimShip>[^']+)' killed by '(?<AgressorPilot>[^']+)' \[[^']+\] using '(?<Weapon>[^']+)' \[Class (?<Class>[^\]]+)\] with damage type '(?<DamageType>[^']+)'"
+$script:KillPattern = "<Actor Death> CActor::Kill: '(?<VictimPilot>[^']+)' \[(?<Victim_id>[-\d\.]+)\] in zone '(?<VictimShip>[^']+)' killed by '(?<AgressorPilot>[^']+)' \[(?<Agressor_id>[-\d\.]+)\] using '(?<Weapon>[^']+)' \[Class (?<Class>[^\]]+)\] with damage type '(?<DamageType>[^']+)'"
 $script:PuPattern = '<\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z> \[Notice\] <ContextEstablisherTaskFinished> establisher="CReplicationModel" message="CET completed" taskname="StopLoadingScreen" state=[^\s()]+\(\d+\) status="Finished" runningTime=\d+\.\d+ numRuns=\d+ map="megamap" gamerules="(?<Gamerules>[^"]+)" sessionId="[a-f0-9\-]+" \[Team_Network\]\[Network\]\[Replication\]\[Loading\]\[Persistence\]'
 # $script:AcPattern = "Requesting Mode Change"  # "ArenaCommanderFeature"
 $script:LoadoutPattern = '\[InstancedInterior\] OnEntityLeaveZone - InstancedInterior \[(?<InstancedInterior>[^\]]+)\] \[\d+\] -> Entity \[(?<Entity>[^\]]+)\] \[\d+\] -- m_openDoors\[\d+\], m_managerGEID\[(?<ManagerGEID>\d+)\], m_ownerGEID\[(?<OwnerGEID>[^\[]+)\]'
@@ -80,7 +81,7 @@ $script:VersionPattern = "--system-trace-env-id='pub-sc-alpha-(?<gameversion>\d{
 $script:VehiclePattern = "<(?<timestamp>[^>]+)> \[Notice\] <Vehicle Destruction> CVehicle::OnAdvanceDestroyLevel: " +
     "Vehicle '(?<vehicle>[^']+)' \[\d+\] in zone '(?<vehicle_zone>[^']+)' " +
     "\[pos x: (?<pos_x>[-\d\.]+), y: (?<pos_y>[-\d\.]+), z: (?<pos_z>[-\d\.]+) " +
-    "vel x: [^,]+, y: [^,]+, z: [^\]]+\] driven by '(?<driver>[^']+)' \[\d+\] " +
+    "vel x: [^,]+, y: [^,]+, z: [^\]]+\] driven by '(?<driver>[^']+)' \[(?<driver_id>[-\d\.]+)\] " +
     "advanced from destroy level (?<destroy_level_from>\d+) to (?<destroy_level_to>\d+) " +
     "caused by '(?<caused_by>[^']+)' \[\d+\] with '(?<damage_type>[^']+)'"
 
@@ -107,10 +108,19 @@ function Get-ConfigurationSettings {
     $requiredSettings = @('Logfile')
     foreach ($setting in $requiredSettings) {
         if (-not $config.ContainsKey($setting)) {
-            Write-Error "Missing required setting: $setting"
+            Write-OutputData "LogERROR=Missing required setting $setting in $configFile"
+            Write-Error "Missing required setting $setting in $configFile"
             return $null
         }
-    } 
+    
+        # Überprüfen, ob die Datei existiert
+        $filePath = $config[$setting]
+        if (-not (Test-Path -Path $filePath)) {
+            Write-OutputData "LogERROR=The $setting specified in $configFile does not exist: $filePath"
+            Write-Error "The $setting specified in $configFile does not exist: $filePath"
+            return $null
+        }
+    }
 
     # Set missing config
     #$logSettings = @('OfflineMode', 'KillLog', 'DeathLog', 'OtherLog', 'VisorWipe', 'VideoRecord')
@@ -118,7 +128,7 @@ function Get-ConfigurationSettings {
     foreach ($setting in $logSettings) {
         if (-not $config.ContainsKey($setting)) {
             $config.$($setting) = $false
-            Write-OutputData "LogInfo=Missing setting: $($setting) Set to false" -force
+            Write-OutputData "LogInfo=Missing setting: $($setting) Set to false"
         } elseif ($config.$($setting) -eq 1) {
             $config.$($setting) = $true
         } else {
@@ -165,7 +175,7 @@ function Import-CsvData {
 
     # Check if the CSV file exists
     if (-Not (Test-Path $csvFile)) {
-        Write-OutputData "LogInfo=CSV file not found. Creating a new file with headers..." 
+        Write-OutputData "LogInfo=CSV file not found. Creating a new file with headers..."
         # Create a new CSV file with the defined headers
         $csvHeader | Out-File -FilePath $csvFile -Encoding utf8
     }
@@ -233,7 +243,7 @@ function Import-CsvData {
                             Write-OutputData "Death=throwaway,$($row.EnemyPilot),$($row.EnemyShip),$($row.OrgAffiliation),$($row.Enlisted),$($row.RecordNumber),$($row.KillTime),$($row.PFP)"
                         }
                     }
-                    default {
+                    "Other" {
                         if ($otherLog) {
                             Update-Tally $row.Type
                             Write-OutputData "Other=throwaway,throwaway,throwaway,throwaway,throwaway,throwaway,$($row.KillTime),throwaway,$($row.Method)"
@@ -275,14 +285,11 @@ function Read-LogEntry {
     }
 
     # Vehicle events
-    if ($line -match $script:VehiclePattern) {
-        # Access the named capture groups from the regex match
-        $vehicle_id = $matches['vehicle']
-        $location = $matches['vehicle_zone']
+    if ($line -match $script:VehiclePattern) {               
+        if (-not $initialised -and $($matches['driver_id']) -ne "0" ) {
+            $eventData = Invoke-VehicleEventProcressing -line $matches
 
-        # Vehicle Destruction Level
-        if (-not $initialised -and $($matches['caused_by']) -like $script:UserName) {
-            Write-OutputData "VehicleDestructionLevel=$($matches['destroy_level_to'])" -force
+            Invoke-EventProcressing -type $eventData.type -config $config -eventData $eventData
         }
     }
 
@@ -312,39 +319,106 @@ function Read-LogEntry {
         Write-OutputData "GameMode=$script:GameMode"
 	}
 
-#	if (-not $initialised -and $line -match $script:AcPattern) {
-#		$script:GameMode = "AC"
-#		Write-OutputData "GameMode=$script:GameMode"
-#	}
-
 	# Apply the regex pattern to the line
 	if (-not $initialised -and $line -match $script:KillPattern) {
         Write-OutputData "LogInfo=KillPattern detected"
-		$eventData = New-KillEvent -data $matches -location $location -vehicle_id $vehicle_id
+		$eventData = New-KillEvent -data $matches
 		$type = New-EventType -eventData $eventData -userName $script:UserName -killLog $config.KillLog -deathLog $config.DeathLog -otherLog $config.OtherLog
 
-		if ($type -ne "none") {           
-            if ($type -ne "Other") {
-                $playerInfo = Get-PlayerInfo $(if ($type -eq "Kill") { $eventData.VictimPilot } else { $eventData.AgressorPilot })
-            }
-            
-			$eventData.victimShip = Format-ShipName $eventData.victimShip
-            $eventData.playerShip = Format-ShipName $script:Loadout    
-	
-			$csvData = New-CsvData -type $type -eventData $eventData -playerInfo $playerInfo
-			if ($type -eq "Kill" -and $null -ne $config.ApiUrl -and -not $config.OfflineMode) {
-                Write-OutputData "LogInfo=Send $type data to server"
-				$csvData.Logged = Send-ApiData -csvData $csvData -location $location -apiUrl $config.ApiUrl -apiKey $config.ApiKey
-			}
-			Write-CSVData -csvData $csvData -csvFile $script:CSVFile
-	
-			Update-Tally $type
-			Write-OutputData "New$type=throwaway,$($csvData.EnemyPilot),$($csvData.EnemyShip),$($csvData.OrgAffiliation),$($csvData.Enlisted),$($csvData.RecordNumber),$($csvData.KillTime),$($csvData.PFP),$($csvData.Method)"
-	
-			Invoke-PostEventActions -config $config -type $type -victimShip $eventData.victimShip -victimPilot $eventData.victimPilot -damageType $eventData.damageType
-		}
+        Invoke-EventProcressing -type $type -config $config -eventData $eventData
 	}
 	
+}
+
+function Invoke-VehicleEventProcressing {
+    param (
+        [hashtable]$line
+    )
+    
+    $victimPilot = $($line['driver'])
+    $victimShip = $($line['vehicle'])
+    $agressorPilot = $($line['caused_by']) 
+    $type = "none"
+
+    if (-not $initialised -and $($line['driver_id']) -ne "0" ) {
+        # Vehicle Destruction Level Kill
+        if ($($line['caused_by']) -like $script:UserName -and $($line['driver']) -notlike $script:UserName) {
+            Write-OutputData "VehicleDestructionEnemy=$($line['destroy_level_to'])" -force
+            $type = "Kill"
+            $agressorShip = $script:Loadout
+        # Vehicle Destruction Level Death
+        }elseif ($($line['driver']) -like $script:UserName -and $($line['caused_by']) -notlike $script:UserName) {
+            Write-OutputData "VehicleDestructionSelf=$($line['destroy_level_to'])" -force
+            $type = "Death"
+            $agressorShip = "unknown"  
+        # Vehicle Destruction Level Other
+        }elseif ($($line['driver']) -like $script:UserName -and $($line['caused_by']) -like $script:UserName) {
+            Write-OutputData "VehicleDestructionSuicide=$($line['destroy_level_to'])" -force
+            $type = "Other"
+            $agressorShip = $script:Loadout
+        }
+
+        # Ship SoftKill
+        if ($($matches['destroy_level_to']) -eq "1") {
+            $type = "Soft"+$type
+        }
+
+        #Don't log PvE Event
+        if(Test-EventForPVE -victimPilot $victimPilot -agressorPilot $agressorPilot -type $type -and $type -ne "none"){
+            $type = "none"
+        }
+        
+        $script:VehicleCache = @{
+            "AgressorPilot" = $agressorPilot
+            "VictimPilot" = $victimPilot
+            "VictimShip" = $victimShip
+        }
+
+        return @{
+            type = $type
+            VictimPilot = $victimPilot
+            VictimShip = $victimShip
+            AgressorPilot = $agressorPilot
+            AgressorShip = $agressorShip
+            Weapon = $($line['damage_type'])
+            DamageType = "Ramming"
+            Location = $($line['vehicle_zone'])
+        }
+        
+    }
+}
+
+function Invoke-EventProcressing {
+    param (
+        [string]$type,
+        [hashtable]$config,
+        [hashtable]$eventData
+        
+    )
+
+    if ($type -ne "none") {           
+        if ($type -notlike "*Other") {
+            $playerInfo = Get-PlayerInfo $(if ($type -like "*Kill") { $eventData.VictimPilot } else { $eventData.AgressorPilot })
+        }
+        
+        $eventData.playerShip = $script:Loadout    
+
+        $csvData = New-CsvData -type $type -eventData $eventData -playerInfo $playerInfo
+
+        # Send data to API-Server
+        if (($type -like "Kill" -or $type -like "Death") -and $null -ne $config.ApiUrl -and -not $config.OfflineMode) {
+            Write-OutputData "LogInfo=Send $type data to server"
+            $csvData.Logged = Send-ApiData -csvData $csvData -location $location -apiUrl $config.ApiUrl -apiKey $config.ApiKey
+        }
+
+        Write-CSVData -csvData $csvData -csvFile $script:CSVFile
+
+        if ($type -notlike "Soft*") {
+            Update-Tally $type
+            Write-OutputData "New$type=throwaway,$($csvData.EnemyPilot),$($csvData.EnemyShip),$($csvData.OrgAffiliation),$($csvData.Enlisted),$($csvData.RecordNumber),$($csvData.KillTime),$($csvData.PFP),$($csvData.Method)"
+            Invoke-PostEventActions -config $config -type $type -victimShip Format-ShipName $eventData.victimShip -victimPilot $eventData.victimPilot -damageType $eventData.damageType
+        }
+    }
 }
 
 function New-CsvData {
@@ -354,11 +428,14 @@ function New-CsvData {
         [hashtable]$playerInfo
     )
 
+    $agressorShip = Format-ShipName $eventData.AgressorShip
+    $victimShip = Format-ShipName $eventData.VictimShip
+
     $csvData = [PSCustomObject]@{
         Type           = $type
         KillTime       = (Get-Date).ToUniversalTime().ToString($script:DateFormat, [System.Globalization.CultureInfo]::InvariantCulture)
-        EnemyPilot     = if ($type -eq "Death" -or $type -eq "Other") { $eventData.AgressorPilot } else { $eventData.VictimPilot }
-        EnemyShip      = if ($type -eq "Death" -or $type -eq "Other") { $eventData.AgressorShip } else { $eventData.VictimShip }
+        EnemyPilot     = if ($type -like "*Death" -or $type -like "*Other") { $eventData.AgressorPilot } else { $eventData.VictimPilot }
+        EnemyShip      = if ($type -like "*Death" -or $type -like "*Other") { $agressorShip } else { $victimShip }
         Enlisted       = $playerInfo.JoinDate
         RecordNumber   = $playerInfo.CitizenRecord
         OrgAffiliation = $playerInfo.Orgs
@@ -385,9 +462,7 @@ function New-CsvData {
 
 function New-KillEvent {
     param (
-        [hashtable]$data,
-        [string] $location,
-        [string] $vehicle_id
+        [hashtable]$data
     )
 
     $victimShip = $data.VictimShip
@@ -414,7 +489,8 @@ function New-KillEvent {
     $delay = $(Get-Date) - $script:LastKillUpdated
     If ($victimShip -ne $script:FpsLoadout) {
         # If last Kill is the same Ship and time it lowerthen PassengerTimeOut
-        If ($victimShip -eq $script:LastKill -and $delay.TotalSeconds -lt $script:PassengerTimeOut){  
+        If ($victimShip -eq $script:LastKill -and $delay.TotalSeconds -lt $script:PassengerTimeOut){ 
+            Write-OutputData "LogInfo=Passenger detected" 
             $victimShip = "Passenger"
         } Else {
             $script:LastKill = $victimShip
@@ -429,7 +505,6 @@ function New-KillEvent {
         AgressorShip = $agressorShip
         Weapon = $weapon
         DamageType = $damageType
-        Location = if ($data.VictimShip -ne $vehicle_id) { $location } else { "none" }
     }
 }
 
@@ -448,49 +523,58 @@ function New-EventType {
         "Suicide"
     )
     
-    $type = "none"
-    # Kill
-    if ($eventData.AgressorPilot -eq $userName -and $eventData.VictimPilot -ne $userName) {
-        if($killLog){$type = "Kill"}else{$type = "none"}
+    $type = "none"  
+    if ($eventData.AgressorPilot -eq $userName -and $eventData.VictimPilot -ne $userName) {$type = "Kill"} 
+    elseif ($eventData.AgressorPilot -ne $userName -and $eventData.VictimPilot -eq $userName) {$type = "Death"} 
+    elseif ($eventData.AgressorPilot -eq $userName -or $eventData.VictimPilot -eq $userName) {$type = "Other"}
 
-    # Death and Others
-    } elseif ($eventData.AgressorPilot -ne $userName -and $eventData.VictimPilot -eq $userName) {
-
-        # Others
-        foreach ($way in $otherWay) {
-            if ($eventData.DamageType -contains $way) {
-                if($otherLog){$type = "Other"}else{$type = "none"}
+    if(Test-EventForPVE -victimPilot $eventData.VictimPilot -agressorPilot $eventData.AgressorPilot -type $type -and $type -ne "none"){
+        if($type -like "*Death" -or $type -like "*Other"){
+            $type = "Other"
+        }else{
+            $type = "none"
+            # Others
+            foreach ($way in $otherWay) {
+                if ($eventData.DamageType -contains $way) {
+                    $type = "Other"
+                }
+            }
+            if ($eventData.Agressor_id -eq "0" -and $eventData.Weapon -eq "unknown") {
+                $type = "Other"
             }
         }
-        if ($eventData.AgressorPilot -eq "unknown" -and $eventData.Weapon -eq "unknown") {
-            if($otherLog){$type = "Other"}else{$type = "none"}
-        }
 
-        # Death
-        elseif($deathLog){$type = "Death"}else{$type = "none"}
-
-    #Suicide
-    } elseif ($eventData.AgressorPilot -eq $userName -or $eventData.VictimPilot -eq $userName) {
-        if($otherLog){$type = "Other"}else{$type = "none"}
     }
 
-    if(Test-EventForPVE -eventData $eventData -type $type -and $type -ne "none"){
-        if($type -eq "Death" -or $type -eq "Other"){$type = "Other"}else{$type = "none"}         
+    # Ignore Kill-Event if it was preceded by a vehicle destruction
+    if($eventData.AgressorPilot -eq $script:VehicleCache.AgressorPilot -and $eventData.VictimPilot -eq $script:VehicleCache.VictimPilot -and $eventData.VictimShip -eq $script:VehicleCache.VictimShip){
+        Write-OutputData "LogInfo=Same Event before detected"
+        $type = "none"
     }
+    $script:VehicleCache = @{
+        "AgressorPilot" = $null
+        "VictimPilot" = $null
+        "VictimShip" = $null
+    }
+
+    if ($type -like "*Kill" -and !$killLog) { $type = "none" }
+    if ($type -like "*Death" -and !$deathLog) { $type = "none" }
+    if ($type -like "*Other" -and !$otherLog) { $type = "none" }
 
     return $type
 }
 
 function Test-EventForPVE {
     param (
-        [hashtable]$eventData,
+        [string]$victimPilot,
+        [string]$agressorPilot,
         [string]$type
     )
 
-    if ($type -eq "Kill") {
-        $proofPlayer = $eventData.VictimPilot
-    }elseif ($type -eq "Death"){
-        $proofPlayer = $eventData.AgressorPilot
+    if ($type -like "*Kill") {
+        $proofPlayer = $victimPilot
+    }elseif ($type -like "*Death"){
+        $proofPlayer = $agressorPilot
     }
 
     $pveEvent = $true
@@ -655,7 +739,6 @@ function Send-ApiData {
 }
 
 
-
 function Write-CSVData {
     param (
         [PSCustomObject]$csvData,
@@ -678,8 +761,7 @@ function Invoke-PostEventActions{
         [string]$damageType
     )
 
-    #$sleepTimer = 10       # TEST: Shorter period when Passenger
-    $sleepTimer = 3        
+    $sleepTimer = 10
 
     if ($config.VisorWipe -and $victimShip -ne "Passenger" -and $damageType -notlike "*Bullet*" -and $type -ne "Other") {
         Write-OutputData "LogInfo=Execute VisorWipe"
@@ -691,8 +773,7 @@ function Invoke-PostEventActions{
     if ($config.VideoRecord -and $victimShip -ne "Passenger" -and $damageType -ne "Suicide") {
         Write-OutputData "LogInfo=Execute VideoRecord"
         Start-Sleep 2
-        $sleepTimer -= 2
-        #$sleepTimer -= 9   # TEST: Shorter period when Passenger
+        $sleepTimer -= 9
         & "$script:VideoRecordFile"
         Start-Sleep 7
 
@@ -731,6 +812,7 @@ function Write-OutputData {
 # ================================= Main script =================================
 # Check if the config file exists
 if (-not (Test-Path $script:ConfigFile)) {
+    Write-OutputData "LogERROR=$script:CSVFileName not found."
     Write-Error "$script:CSVFileName not found."
     return $null
 }
@@ -739,6 +821,7 @@ $config = Get-ConfigurationSettings $script:ConfigFile
 
 # Check if the log file exists
 if (-not (Test-Path $config.LogFile)) {
+    Write-OutputData "LogERROR=Log file not found: $($config.LogPath)"
     Write-Error "Log file not found: $($config.LogPath)"
     return $null
 }
