@@ -5,9 +5,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-//using System.Text.RegularExpressions;
-//using System.Linq;
-//using Newtonsoft.Json.Linq;
 
 namespace AutoTrackR2
 {
@@ -95,8 +92,7 @@ namespace AutoTrackR2
             try
             {
                 string fileName = $"{repoName}_setup.exe"; 
-                //string downloadUrl = $"https://github.com/{repoOwner}/{repoName}/releases/download/{version}/{fileName}";
-                string downloadUrl = $"https://github.com/{repoOwner}/{repoName}/releases/download/test/AutoTrackR2_setup_2.07-koda-soundandservers_20250311_004.exe";
+                string downloadUrl = $"https://github.com/{repoOwner}/{repoName}/releases/download/{version}/{fileName}";
                 string updatePath = Path.Combine(downloadePath, fileName);
 
                 await DownloadFileAsync(downloadUrl, Path.Combine(downloadePath, updatePath));
