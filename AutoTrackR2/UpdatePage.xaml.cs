@@ -1,15 +1,23 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+//using System.Text.RegularExpressions;
+//using System.Linq;
+//using Newtonsoft.Json.Linq;
 
 namespace AutoTrackR2
 {
     public partial class UpdatePage : UserControl
     {
-        private string currentVersion = "2.07-koda-soundandservers_MEDUSA_20250311_004";
+        private static string currentVersion = "2.07-soundsandserver-002";
+        private static string repoOwner = "Koda-Dog";
+        private static string repoName = "AutoTrackR2";
+        private static string downloadePath = Path.GetTempPath();
+        private static string Url = $"https://api.github.com/repos/{repoOwner}/{repoName}/releases/latest";
         private string latestVersion;
 
         public UpdatePage()
@@ -24,7 +32,7 @@ namespace AutoTrackR2
             try
             {
                 // Fetch the latest release info from GitHub
-                latestVersion = await GetLatestVersionFromGitHub();
+                latestVersion = await GetLatestVersionInfoFromGitHub();
 
                 // Update the Available Version field
                 AvailableVersionText.Text = latestVersion;
@@ -43,19 +51,17 @@ namespace AutoTrackR2
             }
         }
 
-        private async Task<string> GetLatestVersionFromGitHub()
+        private async Task<string> GetLatestVersionInfoFromGitHub()
         {
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "AutoTrackR2");
 
-            string repoOwner = "BubbaGumpShrump";
-            string repoName = "AutoTrackR2";
+            string url = $"https://api.github.com/repos/{repoOwner}/{repoName}/releases";
 
             try
             {
                 // Attempt to fetch the latest release
-                var url = $"https://api.github.com/repos/{repoOwner}/{repoName}/releases/latest";
-                var response = await client.GetStringAsync(url);
+                var response = await client.GetStringAsync($"{url}/latest");
 
                 // Parse the JSON using System.Text.Json
                 using var document = System.Text.Json.JsonDocument.Parse(response);
@@ -67,7 +73,6 @@ namespace AutoTrackR2
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 // Fallback to releases list if 'latest' not found
-                var url = $"https://api.github.com/repos/{repoOwner}/{repoName}/releases";
                 var response = await client.GetStringAsync(url);
 
                 using var document = System.Text.Json.JsonDocument.Parse(response);
@@ -84,6 +89,37 @@ namespace AutoTrackR2
             }
         }
 
+        private async Task<string> GetLatestVersionFileFromGitHub(string version)
+        {
+
+            try
+            {
+                string fileName = $"{repoName}_setup.exe"; 
+                //string downloadUrl = $"https://github.com/{repoOwner}/{repoName}/releases/download/{version}/{fileName}";
+                string downloadUrl = $"https://github.com/{repoOwner}/{repoName}/releases/download/test/AutoTrackR2_setup_2.07-koda-soundandservers_20250311_004.exe";
+                string updatePath = Path.Combine(downloadePath, fileName);
+
+                await DownloadFileAsync(downloadUrl, Path.Combine(downloadePath, updatePath));
+
+                AvailableVersionText.Text = "Downloaded update.";
+                return updatePath;
+            }
+            catch (Exception ex)
+            {
+                AvailableVersionText.Text = "Error download update.";
+                MessageBox.Show($"Failed to download update: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return "error";
+            }
+        }
+
+        static async Task DownloadFileAsync(string url, string zielPfad)
+        {
+            using (WebClient webClient = new WebClient())
+            {
+                await webClient.DownloadFileTaskAsync(new Uri(url), zielPfad);
+            }
+        }
+
         private bool IsNewVersionAvailable(string currentVersion, string latestVersion)
         {
             // Return true if the versions are different
@@ -97,48 +133,27 @@ namespace AutoTrackR2
                 InstallButton.IsEnabled = false;
                 InstallButton.Content = "Preparing to Update...";
 
-                // Get the path to the update.ps1 script
-                string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "update.ps1");
+                string updatePath = await GetLatestVersionFileFromGitHub(latestVersion);
+                if (updatePath is not "error")
+                {
+                    MessageBox.Show("Update process has started. Please follow the instructions of the Installer.", "Update Started", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Run the PowerShell script
-                RunPowerShellScript(scriptPath);
+                    // Run update programm
+                    System.Diagnostics.Process.Start(updatePath);
 
-                // Gracefully close the app after running the script
-                Application.Current.Shutdown();
+                    // Gracefully close the app after running the script
+                    Application.Current.Shutdown();             
+                }
 
-                MessageBox.Show("Update process has started. Please follow the instructions in the PowerShell script.", "Update Started", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to run the update script: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Failed to update: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 InstallButton.IsEnabled = true;
                 InstallButton.Content = "Install Update";
-            }
-        }
-
-        private void RunPowerShellScript(string scriptPath)
-        {
-            try
-            {
-                // Prepare the command to run the PowerShell script with elevation (admin rights)
-                var processStartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-ExecutionPolicy Bypass -File \"{scriptPath}\"", // Allow script to run
-                    Verb = "runas", // Request elevation (admin rights)
-                    UseShellExecute = true, // Use the shell to execute the process
-                    CreateNoWindow = false    // Show the PowerShell window
-                };
-
-                // Start the PowerShell process to run the script with admin rights
-                System.Diagnostics.Process.Start(processStartInfo);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to run the PowerShell script with admin rights: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

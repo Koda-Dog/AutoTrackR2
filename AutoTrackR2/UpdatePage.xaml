@@ -26,7 +26,7 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="20" Grid.Row="2">
-                <TextBlock Text="Still a work in progress. Please uninstall current version before installing update." FontSize="16" Foreground="{DynamicResource TextBrush}" />
+                <TextBlock Text="Still a work in progress." FontSize="16" Foreground="{DynamicResource TextBrush}" />
             </StackPanel>
 
             <!-- Install Button -->
