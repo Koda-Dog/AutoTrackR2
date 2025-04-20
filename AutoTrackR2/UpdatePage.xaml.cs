@@ -10,7 +10,7 @@ namespace AutoTrackR2
 {
     public partial class UpdatePage : UserControl
     {
-        private static string currentVersion = "2.07-soundsandserver-002";
+        private static string currentVersion = "2.07-soundandservers-003";
         private static string repoOwner = "Koda-Dog";
         private static string repoName = "AutoTrackR2";
         private static string downloadePath = Path.GetTempPath();

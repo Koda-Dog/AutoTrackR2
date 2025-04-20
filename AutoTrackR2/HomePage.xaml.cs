@@ -160,6 +160,7 @@ namespace AutoTrackR2
                                 {
                                     HandleKillEvent("Other", e.Data);
                                 }
+                                //Destruction of an enemy Ship while a Player is in it
                                 else if (e.Data.Contains("VehicleDestructionEnemy="))
                                 {
                                     string level = e.Data.Split('=')[1].Trim();
@@ -174,13 +175,30 @@ namespace AutoTrackR2
                                         if (ConfigManager.SoundON == 1) { PlaySound("Destruction"); }
                                     }
                                 }
-                                else if (e.Data.Contains("VehicleDestructionSelf="))
+                                //Destruction of a Ship while the Player is in it
+                                else if (e.Data.Contains("VehicleDestructionDeath="))
                                 {
                                     // Preventin an Output
                                 }
+                                //Self caused destruction of a Ship while the Player is in it
                                 else if (e.Data.Contains("VehicleDestructionSuicide="))
                                 {
                                     // Preventin an Output
+                                }
+                                //Destruction of the Players ship
+                                else if (e.Data.Contains("VehicleDestructionOwn="))
+                                {
+                                    string level = e.Data.Split('=')[1].Trim();
+                                    // Vehicle SoftDeath
+                                    if (level.Contains("1"))
+                                    {
+                                        if (ConfigManager.SoundON == 1) { PlaySound("SoftDeath"); } 
+                                    }
+                                    // Vehicle Destruction
+                                    else if (level.Contains("2"))
+                                    {
+                                        if (ConfigManager.SoundON == 1) { PlaySound("Destruction"); }
+                                    }
                                 }
                                 else if (e.Data.Contains("PlayerSpawn"))
                                 {
