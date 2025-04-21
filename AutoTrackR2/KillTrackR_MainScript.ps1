@@ -288,7 +288,7 @@ function Invoke-VehicleEventProcressing {
         Write-OutputData "VehicleDestructionSuicide=$($line['destroy_level_to'])" -force
         $type = "VehicleOther"
         $agressorShip = $script:Loadout.name
-    }elseif (($line.vehicleId -eq $($script:Loadout.id)) -or ($line.vehicleId -eq $($script:Loadout.id2)) -or ($line.vehicleId -eq $($script:Loadout.id3))) {
+    }elseif (($line.vehicleId -eq $($script:Loadout.id)) -or ($line.vehicleId -eq $($script:Loadout.id1)) -or ($line.vehicleId -eq $($script:Loadout.id2))) {
         Write-OutputData "VehicleDestructionOwn=$($line['destroy_level_to'])" -force
         $type = "VehicleDestruction"
         $agressorShip = "unknown"
@@ -513,12 +513,16 @@ function Test-EventForPVE {
     if ($eventData.AgressorPilot_id -ne 0) {
 
         if ($type -like "*Kill") {
-            $proofPlayer = $eventData.victimPilot
+            if ($eventData.VictimPilot_id -ne 0) {
+                $proofPlayer = $eventData.victimPilot
+            } else {
+                $proofPlayer = $null
+            }
+
         } else {
             $proofPlayer = $eventData.agressorPilot
         }
     
-        $pveEvent = $true
         # Proof if event is PvE
         if ($proofPlayer) {
             # Check for space in Name      
@@ -776,8 +780,8 @@ function Read-LogEntry {
     }
 
     # Vehicle events
-    if ($line -match $script:VehiclePattern) {               
-        if (-not $initialised -and ($($matches['VictimPilot_id']) -ne "0" -or ($($matches['vehicleId']) -eq $($script:Loadout['id']))) ) {
+    if ($line -match $script:VehiclePattern) {                       
+        if (-not $initialised -and (($($matches['VictimPilot_id']) -ne "0") -or ($($matches['vehicleId']) -eq $($script:Loadout['id'])) -or ($($matches['vehicleId']) -eq $($script:Loadout['id1'])) -or ($($matches['vehicleId']) -eq $($script:Loadout['id2']))) ) {
             $eventData = Invoke-VehicleEventProcressing -line $matches
 
             Invoke-EventProcressing -type $eventData.type -config $config -eventData $eventData
@@ -791,11 +795,11 @@ function Read-LogEntry {
 		#$location = $matches['Location']
 
         if ($shipName -match $script:ShipManPattern) {
-            if ($script:Loadout.id2 -ne $shipId) {
-                $script:Loadout.name3 = $script:Loadout.name2
-                $script:Loadout.id3 = $script:Loadout.id2
-                $script:Loadout.name2 = $script:Loadout.name
-                $script:Loadout.id2 = $script:Loadout.id
+            if (($shipId -ne $script:Loadout.id) -and ($shipId -ne $script:Loadout.id1) -and ($shipId -ne $script:Loadout.id2)) {
+                $script:Loadout.name2 = $script:Loadout.name2
+                $script:Loadout.id2 = $script:Loadout.id2
+                $script:Loadout.name1 = $script:Loadout.name
+                $script:Loadout.id1 = $script:Loadout.id
                 $script:Loadout.name = $shipName
                 $script:Loadout.id = $shipId
             }
