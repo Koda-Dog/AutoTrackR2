@@ -62,12 +62,12 @@
                     <Slider Name="SoundONSlider" Minimum="0" Maximum="1" TickFrequency="1" IsSnapToTickEnabled="True" Value="0" Style="{StaticResource ToggleSliderStyle}" Margin="44,-4,0,0" ValueChanged="OfflineModeSlider_ValueChanged"/>
                 </StackPanel>
 
-                <!-- Video Record & LocationData Toggle Slider -->
+                <!-- Video Record & VehicleDestruction Toggle Slider -->
                 <StackPanel Margin="0,0,0,15" Orientation="Horizontal">
                     <TextBlock Text="Video Record:" Foreground="{DynamicResource TextBrush}" FontSize="16" Margin="0,7,0,5"/>
                     <Slider Name="VideoRecordSlider" Minimum="0" Maximum="1" TickFrequency="1" IsSnapToTickEnabled="True" Value="0" Style="{StaticResource ToggleSliderStyle}" Margin="10,-4,0,0" ValueChanged="VideoRecordSlider_ValueChanged"/>
-                    <TextBlock Text="LocationData:" Foreground="{DynamicResource TextBrush}" FontSize="16" Margin="0,7,0,5"/>
-                    <Slider Name="LocationDataSlider" Minimum="0" Maximum="1" TickFrequency="1" IsSnapToTickEnabled="True" Value="0" Style="{StaticResource ToggleSliderStyle}" Margin="22,-4,0,0" ValueChanged="OfflineModeSlider_ValueChanged"/>
+                    <TextBlock Text="VehicleDestruction:" Foreground="{DynamicResource TextBrush}" FontSize="16" Margin="0,7,0,5"/>
+                    <Slider Name="VehicleDestructionSlider" Minimum="0" Maximum="1" TickFrequency="1" IsSnapToTickEnabled="True" Value="0" Style="{StaticResource ToggleSliderStyle}" Margin="22,-4,0,0" ValueChanged="OfflineModeSlider_ValueChanged"/>
                 </StackPanel>
 
                 <!-- Offline Mode & OtherLog Toggle Slider -->

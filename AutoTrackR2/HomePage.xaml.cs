@@ -160,45 +160,82 @@ namespace AutoTrackR2
                                 {
                                     HandleKillEvent("Other", e.Data);
                                 }
+                                //Other nearby ship Destruction or SoftDeath
+                                else if (e.Data.Contains("VehicleDestruction=Warning"))
+                                {
+                                    if (ConfigManager.SoundON == 1) { PlaySound("VehicleDestructionWarning"); } 
+                                }
                                 //Destruction of an enemy Ship while a Player is in it
-                                else if (e.Data.Contains("VehicleDestructionEnemy="))
+                                else if (e.Data.Contains("VehicleDestructionEnemy_level="))
                                 {
                                     string level = e.Data.Split('=')[1].Trim();
                                     // Vehicle SoftDeath
                                     if (level.Contains("1"))
                                     {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("SoftDeath"); } 
+                                        if (ConfigManager.SoundON == 1) { PlaySound("EnemyShipSoftDeath"); } 
                                     }
                                     // Vehicle Destruction
                                     else if (level.Contains("2"))
                                     {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("Destruction"); }
+                                        if (ConfigManager.SoundON == 1) { PlaySound("EnemyShipDestruction"); }
                                     }
                                 }
+                                else if (e.Data.Contains("NewSoftVehicleKill="))
+                                {
+                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleKill", e.Data); }
+                                }
+                                else if (e.Data.Contains("NewVehicleKill="))
+                                {
+                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleKill", e.Data); }
+                                }
                                 //Destruction of a Ship while the Player is in it
-                                else if (e.Data.Contains("VehicleDestructionDeath="))
+                                else if (e.Data.Contains("VehicleDestructionDeath_level="))
                                 {
                                     // Preventin an Output
                                 }
+                                else if (e.Data.Contains("NewSoftVehicleDeath="))
+                                {
+                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDeath", e.Data); }
+                                }
+                                else if (e.Data.Contains("NewVehicleDeath="))
+                                {
+                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDeath", e.Data); }
+                                }
                                 //Self caused destruction of a Ship while the Player is in it
-                                else if (e.Data.Contains("VehicleDestructionSuicide="))
+                                else if (e.Data.Contains("VehicleDestructionSuicide_level="))
+                                {
+                                    // Preventin an Output
+                                }
+                                else if (e.Data.Contains("NewSoftVehicleOther="))
+                                {
+                                    // Preventin an Output
+                                }
+                                else if (e.Data.Contains("NewVehicleOther="))
                                 {
                                     // Preventin an Output
                                 }
                                 //Destruction of the Players ship
-                                else if (e.Data.Contains("VehicleDestructionOwn="))
+                                else if (e.Data.Contains("VehicleDestructionOwn_level="))
                                 {
                                     string level = e.Data.Split('=')[1].Trim();
                                     // Vehicle SoftDeath
                                     if (level.Contains("1"))
                                     {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("SoftDeath"); } 
+                                        if (ConfigManager.SoundON == 1) { PlaySound("PlayerShipSoftDeath"); } 
                                     }
                                     // Vehicle Destruction
                                     else if (level.Contains("2"))
                                     {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("Destruction"); }
+                                        if (ConfigManager.SoundON == 1) { PlaySound("PlayerShipDestruction"); }
                                     }
+                                }
+                                else if (e.Data.Contains("NewSoftVehicleDestruction="))
+                                {
+                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDestruction", e.Data); }
+                                }
+                                else if (e.Data.Contains("NewVehicleDestruction="))
+                                {
+                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDestruction", e.Data); }
                                 }
                                 else if (e.Data.Contains("PlayerSpawn"))
                                 {
@@ -326,11 +363,11 @@ namespace AutoTrackR2
             };
 
             // Add content dynamically
-            killTextBlock.Inlines.Add(new Run("Event Type: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
-            killTextBlock.Inlines.Add(new Run($"{eventType}\n"));
-
             if (eventType == "Kill")
             {
+                killTextBlock.Inlines.Add(new Run("Event Type: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{eventType}\n"));
+
                 killTextBlock.Inlines.Add(new Run("Victim Name: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
                 killTextBlock.Inlines.Add(new Run($"{killParts[1]}\n"));
         
@@ -351,6 +388,9 @@ namespace AutoTrackR2
             }
             else if (eventType == "Death")
             {
+                killTextBlock.Inlines.Add(new Run("Event Type: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{eventType}\n"));
+
                 killTextBlock.Inlines.Add(new Run("Agressor Name: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
                 killTextBlock.Inlines.Add(new Run($"{killParts[1]}\n"));
 
@@ -371,12 +411,85 @@ namespace AutoTrackR2
             }
             else if (eventType == "Other")
             {
+                killTextBlock.Inlines.Add(new Run("Event Type: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{eventType}\n"));
+
                 killTextBlock.Inlines.Add(new Run("Death by: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
                 killTextBlock.Inlines.Add(new Run($"{killParts[8]}\n"));
 
                 killTextBlock.Inlines.Add(new Run("Sueside Time: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
                 killTextBlock.Inlines.Add(new Run($"{killParts[6]}"));
 
+            }
+            else if (eventType == "VehicleKill")
+            {
+                killTextBlock.Inlines.Add(new Run("Event Type: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[0]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Name: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[1]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Ship: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[2]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Org: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[3]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Join Date: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[4]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("UEE Record: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[5]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Death Time: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[6]}"));
+            }
+            else if (eventType == "VehicleDeath")
+            {
+                killTextBlock.Inlines.Add(new Run("Event Type: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[0]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Name: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[1]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Ship: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[2]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Org: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[3]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Join Date: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[4]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("UEE Record: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[5]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Death Time: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[6]}"));   
+            }
+            else if (eventType == "VehicleDestruction")
+            {
+                killTextBlock.Inlines.Add(new Run("Event Type: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[0]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Name: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[1]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Ship: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[2]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Agressor Org: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[3]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Join Date: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[4]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("UEE Record: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[5]}\n"));
+
+                killTextBlock.Inlines.Add(new Run("Death Time: ") { Foreground = altTextColorBrush, FontFamily = orbitronFontFamily });
+                killTextBlock.Inlines.Add(new Run($"{killParts[6]}"));  
+                
             }
 
             // Create a Border and apply the RoundedTextBlockWithBorder style
@@ -482,8 +595,11 @@ namespace AutoTrackR2
             return eventType switch
             {
                 "Kill" => Path.Combine(baseDirectory, "Assets/EnemyPlayer_Kill.mp3"),
-                "SoftDeath" => Path.Combine(baseDirectory, "Assets/EnemyShip_SoftDeath.mp3"),
-                "Destruction" => Path.Combine(baseDirectory, "Assets/EnemyShip_Destruction.mp3"),
+                "EnemyShipSoftDeath" => Path.Combine(baseDirectory, "Assets/EnemyShip_SoftDeath.mp3"),
+                "EnemyShipDestruction" => Path.Combine(baseDirectory, "Assets/EnemyShip_Destruction.mp3"),
+                "PlayerShipSoftDeath" => Path.Combine(baseDirectory, "Assets/EnemyShip_SoftDeath.mp3"),
+                "PlayerShipDestruction" => Path.Combine(baseDirectory, "Assets/EnemyShip_Destruction.mp3"),
+                "VehicleDestructionWarning" => Path.Combine(baseDirectory, "Assets/Ship_Destruction_Warning.mp3"),
                 "PlayerSpawn" => Path.Combine(baseDirectory, "Assets/PlayerSpawn.mp3"),
                 _ => null // Unknown event type
             };

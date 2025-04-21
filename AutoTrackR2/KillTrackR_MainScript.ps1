@@ -2,7 +2,7 @@
 # GitHub: https://github.com/BubbaGumpShrump/AutoTrackR2
 
 # Script version
-$script:TrackRver = "2.07-soundsandserver-003"
+$script:TrackRver = "2.07-soundsandserver-20250421_003"
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -36,6 +36,7 @@ $script:PlayerCache = @{}
 $script:UrlCache = @{}
 $script:UserName = $null
 $script:Loadout = @{
+    current = "unknow"
     name = "unknow"
     id = $null
 }
@@ -90,6 +91,8 @@ $script:VehiclePattern = "<(?<timestamp>[^>]+)> \[Notice\] <Vehicle Destruction>
     "caused by '(?<AgressorPilot>[^']+)' \[(?<AgressorPilot_id>[-\d\.]+)\] with '(?<damage_type>[^']+)'"
 
 $script:SpawnPattern = "<(?<timestamp>[^>]+)> \[CSessionManager::OnClientSpawned\] Spawned!"
+$script:FPSPattern = "<InventoryManagement.*.Player\[(?<player>[A-Za-z0-9_-]+)\]"
+$script:AttachmentPattern = "<AttachmentReceived> Player\[(?<player>[A-Za-z0-9_-]+)\] Attachment\[(?<attachment>[^']+)\] Status\[.*.\] Port\[(?<type>[^']+)\] Elapsed"
 
 # Lookup Patterns
 $script:joinDatePattern = '<span class="label">Enlisted</span>\s*<strong class="value">([^<]+)</strong>'
@@ -275,21 +278,21 @@ function Invoke-VehicleEventProcressing {
 
     # Vehicle Destruction Level Kill
     if ($line.AgressorPilot -like $script:UserName -and $line.VictimPilot -notlike $script:UserName) {
-        Write-OutputData "VehicleDestructionEnemy=$($line['destroy_level_to'])" -force
+        Write-OutputData "VehicleDestructionEnemy_level=$($line['destroy_level_to'])" -force
         $type = "VehicleKill"
         $agressorShip = $script:Loadout.name
     # Vehicle Destruction Level Death
     }elseif ($line.VictimPilot -like $script:UserName -and $line.AgressorPilot -notlike $script:UserName) {
-        Write-OutputData "VehicleDestructionDeath=$($line['destroy_level_to'])" -force
+        Write-OutputData "VehicleDestructionDeath_level=$($line['destroy_level_to'])" -force
         $type = "VehicleDeath"
         $agressorShip = "unknown"  
     # Vehicle Destruction Level Other
     }elseif ($line.VictimPilot -like $script:UserName -and $line.AgressorPilot -like $script:UserName) {
-        Write-OutputData "VehicleDestructionSuicide=$($line['destroy_level_to'])" -force
+        Write-OutputData "VehicleDestructionSuicide_level=$($line['destroy_level_to'])" -force
         $type = "VehicleOther"
         $agressorShip = $script:Loadout.name
     }elseif (($line.vehicleId -eq $($script:Loadout.id)) -or ($line.vehicleId -eq $($script:Loadout.id1)) -or ($line.vehicleId -eq $($script:Loadout.id2))) {
-        Write-OutputData "VehicleDestructionOwn=$($line['destroy_level_to'])" -force
+        Write-OutputData "VehicleDestructionOwn_level=$($line['destroy_level_to'])" -force
         $type = "VehicleDestruction"
         $agressorShip = "unknown"
     }
@@ -349,11 +352,20 @@ function Invoke-EventProcressing {
 
         Write-CSVData -csvData $csvData -csvFile $script:CSVFile
 
+#        if ($type -notlike "*Vehicle*") {
+#            Update-Tally $type
+#            Write-OutputData "New$type=throwaway,$($csvData.EnemyPilot),$($csvData.EnemyShip),$($csvData.OrgAffiliation),$($csvData.Enlisted),$($csvData.RecordNumber),$($csvData.KillTime),$($csvData.PFP),$($csvData.Method)"
+#            Invoke-PostEventActions -config $config -type $type -victimShip Format-ShipName $eventData.victimShip -victimPilot $eventData.victimPilot -damageType $eventData.damageType
+#        }
+
+        Write-OutputData "New$type=$($csvData.type),$($csvData.EnemyPilot),$($csvData.EnemyShip),$($csvData.OrgAffiliation),$($csvData.Enlisted),$($csvData.RecordNumber),$($csvData.KillTime),$($csvData.PFP),$($csvData.Method)"
         if ($type -notlike "*Vehicle*") {
             Update-Tally $type
-            Write-OutputData "New$type=throwaway,$($csvData.EnemyPilot),$($csvData.EnemyShip),$($csvData.OrgAffiliation),$($csvData.Enlisted),$($csvData.RecordNumber),$($csvData.KillTime),$($csvData.PFP),$($csvData.Method)"
             Invoke-PostEventActions -config $config -type $type -victimShip Format-ShipName $eventData.victimShip -victimPilot $eventData.victimPilot -damageType $eventData.damageType
         }
+
+
+
     }
 }
 
@@ -721,7 +733,7 @@ function Invoke-PostEventActions{
         Start-Sleep 2
         $sleepTimer -= 9   
         & "$script:VideoRecordFile"
-        Start-Sleep 7
+        Start-Sleep 7       
 
         $latestFile = Get-ChildItem -Path $config.VideoPath | Where-Object { -not $_.PSIsContainer } | Sort-Object CreationTime -Descending | Select-Object -First 1
         if ($latestFile -and ((New-TimeSpan -Start $latestFile.CreationTime -End (Get-Date)).TotalSeconds -le 30)) {
@@ -764,7 +776,7 @@ function Read-LogEntry {
 	#Get SC Version
 	If ($initialised -and $line -match $script:VersionPattern){
 		$script:GameVersion = $matches['gameversion']
-		Write-OutputData "LogInfo=GameVersion: $script:GameVersion"
+		Write-OutputData "LogInfo=GameVersion: $script:GameVersion" 
 	}
 
 	# Get Logged-in User
@@ -775,16 +787,27 @@ function Read-LogEntry {
 
     # Spawn event
     if (-not $initialised -and $line -match $script:SpawnPattern) {
-        Write-OutputData "PlayerSpawn"
         Write-OutputData "LogInfo=PlayerSpawn"
+        Write-OutputData "PlayerShip=$script:FpsLoadout"
+        $script:Loadout.current = $script:FpsLoadout
+    }
+
+    #FPS event
+    if (-not $initialised -and (($line -match $script:FPSPattern) -or ($line -match $script:AttachmentPattern))) {
+        if ($($matches['player']) -eq $script:UserName -and $($script:Loadout['current']) -ne $script:FpsLoadout) {
+            Write-OutputData "LogInfo=FPS detected"
+            Write-OutputData "PlayerShip=$script:FpsLoadout"
+            $script:Loadout.current = $script:FpsLoadout
+        }
     }
 
     # Vehicle events
-    if ($line -match $script:VehiclePattern) {                       
+    if ($line -match $script:VehiclePattern) {            
         if (-not $initialised -and (($($matches['VictimPilot_id']) -ne "0") -or ($($matches['vehicleId']) -eq $($script:Loadout['id'])) -or ($($matches['vehicleId']) -eq $($script:Loadout['id1'])) -or ($($matches['vehicleId']) -eq $($script:Loadout['id2']))) ) {
             $eventData = Invoke-VehicleEventProcressing -line $matches
-
             Invoke-EventProcressing -type $eventData.type -config $config -eventData $eventData
+        } elseif (-not $initialised) {
+            Write-OutputData "VehicleDestruction=Warning"
         }
     }
 
@@ -804,6 +827,7 @@ function Read-LogEntry {
                 $script:Loadout.id = $shipId
             }
 		}
+        $script:Loadout.current = $shipId
 		Write-OutputData "PlayerShip=$shipName"
 	}
 

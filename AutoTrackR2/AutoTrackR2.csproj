@@ -13,36 +13,39 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CSCore" Version="1.2.1.2" />
+    <PackageReference Include="CSCore" Version="1.2.1.2"/>
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Assets\AVSQN.png" />
-    <None Remove="Assets\BlightVeil.png" />
-    <None Remove="Assets\BOBGREL.png" />
-    <None Remove="Assets\chibifox.png" />
-    <None Remove="Assets\D3VL.png" />
-    <None Remove="Assets\EMP.png" />
-    <None Remove="Assets\Gankhub.png" />
-    <None Remove="Assets\HEX.png" />
-    <None Remove="Assets\HIT.png" />
-    <None Remove="Assets\MAMMON.png" />
-    <None Remove="Assets\NMOS.png" />
-    <None Remove="Assets\NW.png" />
-    <None Remove="Assets\RACKETEERS.png" />
-    <None Remove="Assets\SHADOWMOSES.png" />
-    <None Remove="Assets\VOX.png" />
-    <None Remove="Assets\WRITH.png" />
-    <None Remove="Fonts\Orbitron-Bold.ttf" />
-    <None Remove="Fonts\Roboto-Regular.ttf" />
-    <None Remove="Assets\EnemyPlayer_Kill.mp3" />
-    <None Remove="Assets\EnemyShip_Destruction.mp3" />
-    <None Remove="Assets\EnemyShip_SoftDeath.mp3" />
-    <None Remove="Assets\PlayerSpawn.mp3" />
+    <None Remove="Assets\AVSQN.png"/>
+    <None Remove="Assets\BlightVeil.png"/>
+    <None Remove="Assets\BOBGREL.png"/>
+    <None Remove="Assets\chibifox.png"/>
+    <None Remove="Assets\D3VL.png"/>
+    <None Remove="Assets\EMP.png"/>
+    <None Remove="Assets\Gankhub.png"/>
+    <None Remove="Assets\HEX.png"/>
+    <None Remove="Assets\HIT.png"/>
+    <None Remove="Assets\MAMMON.png"/>
+    <None Remove="Assets\NMOS.png"/>
+    <None Remove="Assets\NW.png"/>
+    <None Remove="Assets\RACKETEERS.png"/>
+    <None Remove="Assets\SHADOWMOSES.png"/>
+    <None Remove="Assets\VOX.png"/>
+    <None Remove="Assets\WRITH.png"/>
+    <None Remove="Fonts\Orbitron-Bold.ttf"/>
+    <None Remove="Fonts\Roboto-Regular.ttf"/>
+    <None Remove="Assets\EnemyPlayer_Kill.mp3"/>
+    <None Remove="Assets\EnemyShip_Destruction.mp3"/>
+    <None Remove="Assets\EnemyShip_SoftDeath.mp3"/>
+    <None Remove="Assets\PlayerShip_Destruction.mp3"/>
+    <None Remove="Assets\PlayerShip_SoftDeath.mp3"/>
+    <None Remove="Assets\PlayerSpawn.mp3"/>
+    <None Remove="Assets\Ship_Destruction_Warning.mp3"/>
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="AutoTrackR2.ico" />
+    <Content Include="AutoTrackR2.ico"/>
   </ItemGroup>
 
 <ItemGroup>
@@ -103,7 +106,7 @@
     <Resource Include="Assets\WRITH.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="config.ini" />
+    <Resource Include="config.ini"/>
     <Resource Include="Fonts\Orbitron-Bold.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
@@ -113,17 +116,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AppData Include="Assets\videorecord.ahk" CopyToOutputDirectory="PreserveNewest" />
-    <AppData Include="Assets\visorwipe.ahk" CopyToOutputDirectory="PreserveNewest" />
+    <AppData Include="Assets\videorecord.ahk" CopyToOutputDirectory="PreserveNewest"/>
+    <AppData Include="Assets\visorwipe.ahk" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="KillTrackR_MainScript.ps1" CopyToOutputDirectory="Always" />
-    <None Update="update.ps1" CopyToOutputDirectory="Always" />
-    <None Include="Assets\EnemyPlayer_Kill.mp3" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Assets\EnemyShip_Destruction.mp3" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Assets\EnemyShip_SoftDeath.mp3" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Assets\PlayerSpawn.mp3" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="KillTrackR_MainScript.ps1" CopyToOutputDirectory="Always"/>
+    <None Update="update.ps1" CopyToOutputDirectory="Always"/>
+    <None Include="Assets\EnemyPlayer_Kill.mp3" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Assets\EnemyShip_Destruction.mp3" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Assets\EnemyShip_SoftDeath.mp3" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Assets\PlayerSpawn.mp3" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <Target Name="CopyAppData" AfterTargets="Build">
@@ -131,11 +134,11 @@
       <AppDataPath>$(LocalAppData)\AutoTrackR2</AppDataPath>
     </PropertyGroup>
 
-    <MakeDir Directories="$(AppDataPath)" />
+    <MakeDir Directories="$(AppDataPath)"/>
 
     <Copy SourceFiles="@(AppData)" 
           DestinationFolder="$(AppDataPath)" 
-          SkipUnchangedFiles="true" />
+          SkipUnchangedFiles="true"/>
   </Target>
 
 </Project>

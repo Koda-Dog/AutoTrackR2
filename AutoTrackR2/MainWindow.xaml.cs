@@ -188,7 +188,7 @@ namespace AutoTrackR2
                 ConfigManager.VideoRecord,
                 ConfigManager.OfflineMode,
                 ConfigManager.SoundON,
-                ConfigManager.LocationData,
+                ConfigManager.VehicleDestruction,
                 ConfigManager.OtherLog,
                 ConfigManager.Theme
             );
@@ -205,7 +205,7 @@ namespace AutoTrackR2
         public static int VideoRecord { get; set; }
         public static int OfflineMode { get; set; }
         public static int SoundON { get; set; }
-        public static int LocationData { get; set; }
+        public static int VehicleDestruction { get; set; }
         public static int OtherLog { get; set; }
         public static int Theme { get; set; }
 
@@ -238,8 +238,8 @@ namespace AutoTrackR2
                         OfflineMode = int.Parse(line.Substring("OfflineMode=".Length).Trim());
                     else if (line.StartsWith("SoundON="))
                         SoundON = int.Parse(line.Substring("SoundON=".Length).Trim());
-                    else if (line.StartsWith("LocationData="))
-                        LocationData = int.Parse(line.Substring("LocationData=".Length).Trim());
+                    else if (line.StartsWith("VehicleDestruction="))
+                        VehicleDestruction = int.Parse(line.Substring("VehicleDestruction=".Length).Trim());
                     else if (line.StartsWith("OtherLog="))
                         OtherLog = int.Parse(line.Substring("OtherLog=".Length).Trim());
                     else if (line.StartsWith("Theme="))
@@ -275,7 +275,7 @@ namespace AutoTrackR2
                 writer.WriteLine($"VideoRecord={VideoRecord}");
                 writer.WriteLine($"OfflineMode={OfflineMode}");
                 writer.WriteLine($"SoundON={SoundON}");
-                writer.WriteLine($"LocationData={LocationData}");
+                writer.WriteLine($"VehicleDestruction={VehicleDestruction}");
                 writer.WriteLine($"OtherLog={OtherLog}");
                 writer.WriteLine($"Theme={Theme}");
             }

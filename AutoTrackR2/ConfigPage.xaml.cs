@@ -33,11 +33,11 @@ namespace AutoTrackR2
             VideoRecordSlider.Value = ConfigManager.VideoRecord;
             OfflineModeSlider.Value = ConfigManager.OfflineMode;
             SoundONSlider.Value = ConfigManager.SoundON;
-            LocationDataSlider.Value = ConfigManager.LocationData;
+            VehicleDestructionSlider.Value = ConfigManager.VehicleDestruction;
             OtherLogSlider.Value = ConfigManager.OtherLog;
             ThemeSlider.Value = ConfigManager.Theme;
 
-            ApplyToggleModeStyle(OfflineModeSlider.Value, VisorWipeSlider.Value, VideoRecordSlider.Value, SoundONSlider.Value, LocationDataSlider.Value, OtherLogSlider.Value);
+            ApplyToggleModeStyle(OfflineModeSlider.Value, VisorWipeSlider.Value, VideoRecordSlider.Value, SoundONSlider.Value, VehicleDestructionSlider.Value, OtherLogSlider.Value);
         }
 
         // Method to change the logo image in MainWindow
@@ -68,7 +68,7 @@ namespace AutoTrackR2
 
         // This method will set the loaded config values to the UI controls
         public void SetConfigValues(string logFile, string apiUrl, string apiKey, string videoPath,
-                                     int visorWipe, int videoRecord, int offlineMode, int soundON, int locationData, int otherLog, int theme)
+                                     int visorWipe, int videoRecord, int offlineMode, int soundON, int vehicleDestruction, int otherLog, int theme)
         {
             // Set the textboxes with the loaded values
             LogFilePath.Text = logFile;
@@ -81,7 +81,7 @@ namespace AutoTrackR2
             VisorWipeSlider.Value = visorWipe;
             OfflineModeSlider.Value = offlineMode;
             SoundONSlider.Value = soundON;
-            LocationDataSlider.Value = locationData;
+            VehicleDestructionSlider.Value = vehicleDestruction;
             OtherLogSlider.Value = otherLog;
 
             // Handle themes
@@ -95,14 +95,14 @@ namespace AutoTrackR2
             }
         }
 
-        private void ApplyToggleModeStyle(double offlineModeValue, double visorWipeValue, double videoRecordValue, double soundONValue, double locationDatavalue, double otherLogValue)
+        private void ApplyToggleModeStyle(double offlineModeValue, double visorWipeValue, double videoRecordValue, double soundONValue, double vehicleDestructionvalue, double otherLogValue)
         {
             // Get the slider
             Slider offlineModeSlider = OfflineModeSlider;
             Slider visorWipeSlider = VisorWipeSlider;
             Slider videoRecordSlider = VideoRecordSlider;
             Slider soundONSlider = SoundONSlider;
-            Slider locationDataSlider = LocationDataSlider;
+            Slider vehicleDestructionSlider = VehicleDestructionSlider;
             Slider otherLogSlider = OtherLogSlider;
 
             // Set the appropriate style based on value (0 or 1)
@@ -126,9 +126,9 @@ namespace AutoTrackR2
                 soundONSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
             }
 
-            if (locationDatavalue == 0)
+            if (vehicleDestructionvalue == 0)
             {
-                locationDataSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
+                vehicleDestructionSlider.Style = (Style)Application.Current.FindResource("FalseToggleStyle");
             }
 
             if (otherLogValue == 0)
@@ -548,7 +548,7 @@ namespace AutoTrackR2
                 writer.WriteLine($"VideoRecord={(int)VideoRecordSlider.Value}");
                 writer.WriteLine($"OfflineMode={(int)OfflineModeSlider.Value}");
                 writer.WriteLine($"SoundON={(int)SoundONSlider.Value}");
-                writer.WriteLine($"LocationData={(int)LocationDataSlider.Value}");
+                writer.WriteLine($"VehicleDestruction={(int)VehicleDestructionSlider.Value}");
                 writer.WriteLine($"OtherLog={(int)OtherLogSlider.Value}");
                 writer.WriteLine($"Theme={(int)ThemeSlider.Value}"); // Assumes you are saving the theme slider value (0, 1, or 2)
             }
