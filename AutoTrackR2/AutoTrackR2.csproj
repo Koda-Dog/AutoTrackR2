@@ -126,7 +126,10 @@
     <None Include="Assets\EnemyPlayer_Kill.mp3" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="Assets\EnemyShip_Destruction.mp3" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="Assets\EnemyShip_SoftDeath.mp3" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Assets\PlayerShip_Destruction.mp3" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Assets\PlayerShip_SoftDeath.mp3" CopyToOutputDirectory="PreserveNewest"/>
     <None Include="Assets\PlayerSpawn.mp3" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="Assets\Ship_Destruction_Warning.mp3" CopyToOutputDirectory="PreserveNewest"/>
   </ItemGroup>
 
   <Target Name="CopyAppData" AfterTargets="Build">

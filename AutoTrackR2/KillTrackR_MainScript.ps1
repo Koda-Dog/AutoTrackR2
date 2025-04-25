@@ -2,7 +2,7 @@
 # GitHub: https://github.com/BubbaGumpShrump/AutoTrackR2
 
 # Script version
-$script:TrackRver = "2.07-soundsandserver-20250421_003"
+$script:TrackRver = "2.07-soundsandserver-004"
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -76,6 +76,7 @@ $prefixes = @(
 # Define the regex pattern to extract information
 $script:KillPattern = "<Actor Death> CActor::Kill: '(?<VictimPilot>[^']+)' \[(?<VictimPilot_id>[-\d\.]+)\] in zone '(?<VictimShip>[^']+)' killed by '(?<AgressorPilot>[^']+)' \[(?<AgressorPilot_id>[-\d\.]+)\] using '(?<Weapon>[^']+)' \[Class (?<Class>[^\]]+)\] with damage type '(?<DamageType>[^']+)'"
 $script:PuPattern = '<\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z> \[Notice\] <ContextEstablisherTaskFinished> establisher="CReplicationModel" message="CET completed" taskname="StopLoadingScreen" state=[^\s()]+\(\d+\) status="Finished" runningTime=\d+\.\d+ numRuns=\d+ map="megamap" gamerules="(?<Gamerules>[^"]+)" sessionId="[a-f0-9\-]+" \[Team_Network\]\[Network\]\[Replication\]\[Loading\]\[Persistence\]'
+$script:GameRulesPattern='.*.gamerules="(?<Gamerules>[^"]+)'
 #$script:AcPattern = "Requesting Mode Change"  # "ArenaCommanderFeature"
 #$script:LoadoutPattern = '\[InstancedInterior\] OnEntityLeaveZone - InstancedInterior \[(?<InstancedInterior>[^\]]+)\] \[\d+\] -> Entity \[(?<Entity>[^\]]+)\] \[\d+\] -- m_openDoors\[\d+\], m_managerGEID\[(?<ManagerGEID>\d+)\], m_ownerGEID\[(?<OwnerGEID>[^\[]+)\]'
 $script:ShipManPattern = "^(" + ($prefixes -join "|") + ")"
@@ -291,7 +292,7 @@ function Invoke-VehicleEventProcressing {
         Write-OutputData "VehicleDestructionSuicide_level=$($line['destroy_level_to'])" -force
         $type = "VehicleOther"
         $agressorShip = $script:Loadout.name
-    }elseif (($line.vehicleId -eq $($script:Loadout.id)) -or ($line.vehicleId -eq $($script:Loadout.id1)) -or ($line.vehicleId -eq $($script:Loadout.id2))) {
+    }elseif ((($line.vehicleId -eq $($script:Loadout.id)) -or ($line.vehicleId -eq $($script:Loadout.id1)) -or ($line.vehicleId -eq $($script:Loadout.id2)))) {
         Write-OutputData "VehicleDestructionOwn_level=$($line['destroy_level_to'])" -force
         $type = "VehicleDestruction"
         $agressorShip = "unknown"
@@ -337,7 +338,7 @@ function Invoke-EventProcressing {
 
     if ($type -ne "none") {           
         if ($type -notlike "*Other") {
-            $playerInfo = Get-PlayerInfo $(if ($type -like "*Kill") { $eventData.VictimPilot } else { $eventData.AgressorPilot })
+            $playerInfo = Get-PlayerInfo $(if ($type -like "*Kill") { $eventData.VictimPilot } else { $eventData.AgressorPilot }) $(if ($type -like "*Kill") { $eventData.VictimPilot_id } else { $eventData.AgressorPilot_id })
         }
         
         $eventData.playerShip = $script:Loadout.name    
@@ -351,12 +352,6 @@ function Invoke-EventProcressing {
         }
 
         Write-CSVData -csvData $csvData -csvFile $script:CSVFile
-
-#        if ($type -notlike "*Vehicle*") {
-#            Update-Tally $type
-#            Write-OutputData "New$type=throwaway,$($csvData.EnemyPilot),$($csvData.EnemyShip),$($csvData.OrgAffiliation),$($csvData.Enlisted),$($csvData.RecordNumber),$($csvData.KillTime),$($csvData.PFP),$($csvData.Method)"
-#            Invoke-PostEventActions -config $config -type $type -victimShip Format-ShipName $eventData.victimShip -victimPilot $eventData.victimPilot -damageType $eventData.damageType
-#        }
 
         Write-OutputData "New$type=$($csvData.type),$($csvData.EnemyPilot),$($csvData.EnemyShip),$($csvData.OrgAffiliation),$($csvData.Enlisted),$($csvData.RecordNumber),$($csvData.KillTime),$($csvData.PFP),$($csvData.Method)"
         if ($type -notlike "*Vehicle*") {
@@ -375,9 +370,6 @@ function New-CsvData {
         [hashtable]$eventData,
         [hashtable]$playerInfo
     )
-
-#    $agressorShip = Format-ShipName $eventData.AgressorShip
-#    $victimShip = Format-ShipName $eventData.VictimShip
 
     $csvData = [PSCustomObject]@{
         Type           = $type
@@ -496,7 +488,7 @@ function New-EventType {
 
     }
 
-    # Ignore Kill-Event if it was preceded by a vehicle destruction
+    # Ignore Kill-Event if it was preceded before
     if($eventData.AgressorPilot -eq $script:VehicleCache.AgressorPilot -and $eventData.VictimPilot -eq $script:VehicleCache.VictimPilot -and $eventData.VictimShip -eq $script:VehicleCache.VictimShip){
         Write-OutputData "LogInfo=Same Event before detected"
         $type = "none"
@@ -589,8 +581,14 @@ function Update-Tally {
 
 function Get-PlayerInfo {
     param (
-        [string]$playerName
+        [string]$playerName,
+        [string]$playerId
     )
+
+    if ($playerId -eq 0) {
+        Write-OutputData "LogInfo=No valide PlayerId"
+        return $null
+    }
     
 	# Check cache
     if ($script:PlayerCache.ContainsKey($playerName)) {
@@ -719,7 +717,7 @@ function Invoke-PostEventActions{
         [string]$damageType
     )
 
-    $sleepTimer = 10       
+    $sleepTimer = 10        
 
     if ($config.VisorWipe -and $victimShip -ne "Passenger" -and $damageType -notlike "*Bullet*" -and $type -ne "Other") {
         Write-OutputData "LogInfo=Execute VisorWipe"
@@ -831,17 +829,21 @@ function Read-LogEntry {
 		Write-OutputData "PlayerShip=$shipName"
 	}
 
-    #Get Game Mode
-	if ($line -match $script:PuPattern) { 
-        Write-OutputData "LogInfo=Gamerules: $($matches.Gamerules)"
-        if ($($matches.Gamerules) -match "SC_Default") {
-            $script:GameMode = "PU"
-		    
-        }else{
-            $script:GameMode = "$($matches.Gamerules)"
+    if ($line -match $script:GameRulesPattern) {
+        $gamerule = $($matches.Gamerules)
+        $gamerulesName = @{
+            SC_Default = "PU"
+            SC_Frontend = "Menu"
         }
+
+        if ($gamerulesName.$gamerule){
+            $script:GameMode = $gamerulesName.$gamerule
+        }else{
+            $script:GameMode = $gamerule
+        }
+
         Write-OutputData "GameMode=$script:GameMode"
-	}
+    }
 
 	# Apply the regex pattern to the line
 	if (-not $initialised -and $line -match $script:KillPattern) {

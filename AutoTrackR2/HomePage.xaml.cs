@@ -160,88 +160,90 @@ namespace AutoTrackR2
                                 {
                                     HandleKillEvent("Other", e.Data);
                                 }
-                                //Other nearby ship Destruction or SoftDeath
-                                else if (e.Data.Contains("VehicleDestruction=Warning"))
-                                {
-                                    if (ConfigManager.SoundON == 1) { PlaySound("VehicleDestructionWarning"); } 
-                                }
-                                //Destruction of an enemy Ship while a Player is in it
-                                else if (e.Data.Contains("VehicleDestructionEnemy_level="))
-                                {
-                                    string level = e.Data.Split('=')[1].Trim();
-                                    // Vehicle SoftDeath
-                                    if (level.Contains("1"))
-                                    {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("EnemyShipSoftDeath"); } 
-                                    }
-                                    // Vehicle Destruction
-                                    else if (level.Contains("2"))
-                                    {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("EnemyShipDestruction"); }
-                                    }
-                                }
-                                else if (e.Data.Contains("NewSoftVehicleKill="))
-                                {
-                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleKill", e.Data); }
-                                }
-                                else if (e.Data.Contains("NewVehicleKill="))
-                                {
-                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleKill", e.Data); }
-                                }
-                                //Destruction of a Ship while the Player is in it
-                                else if (e.Data.Contains("VehicleDestructionDeath_level="))
-                                {
-                                    // Preventin an Output
-                                }
-                                else if (e.Data.Contains("NewSoftVehicleDeath="))
-                                {
-                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDeath", e.Data); }
-                                }
-                                else if (e.Data.Contains("NewVehicleDeath="))
-                                {
-                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDeath", e.Data); }
-                                }
-                                //Self caused destruction of a Ship while the Player is in it
-                                else if (e.Data.Contains("VehicleDestructionSuicide_level="))
-                                {
-                                    // Preventin an Output
-                                }
-                                else if (e.Data.Contains("NewSoftVehicleOther="))
-                                {
-                                    // Preventin an Output
-                                }
-                                else if (e.Data.Contains("NewVehicleOther="))
-                                {
-                                    // Preventin an Output
-                                }
-                                //Destruction of the Players ship
-                                else if (e.Data.Contains("VehicleDestructionOwn_level="))
-                                {
-                                    string level = e.Data.Split('=')[1].Trim();
-                                    // Vehicle SoftDeath
-                                    if (level.Contains("1"))
-                                    {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("PlayerShipSoftDeath"); } 
-                                    }
-                                    // Vehicle Destruction
-                                    else if (level.Contains("2"))
-                                    {
-                                        if (ConfigManager.SoundON == 1) { PlaySound("PlayerShipDestruction"); }
-                                    }
-                                }
-                                else if (e.Data.Contains("NewSoftVehicleDestruction="))
-                                {
-                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDestruction", e.Data); }
-                                }
-                                else if (e.Data.Contains("NewVehicleDestruction="))
-                                {
-                                    if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDestruction", e.Data); }
-                                }
                                 else if (e.Data.Contains("PlayerSpawn"))
                                 {
                                     if (ConfigManager.SoundON == 1) { PlaySound("PlayerSpawn"); } 
                                 }
-
+                                else if (GameModeTextBox.Text == "PU")
+                                {
+                                    //Other nearby ship Destruction or SoftDeath
+                                    if (e.Data.Contains("VehicleDestruction=Warning"))
+                                    {
+                                        if (ConfigManager.SoundON == 1) { PlaySound("VehicleDestructionWarning"); } 
+                                    }
+                                    //Destruction of an enemy Ship while a Player is in it
+                                    else if (e.Data.Contains("VehicleDestructionEnemy_level="))
+                                    {
+                                        string level = e.Data.Split('=')[1].Trim();
+                                        // Vehicle SoftDeath
+                                        if (level.Contains("1"))
+                                        {
+                                            if (ConfigManager.SoundON == 1) { PlaySound("EnemyShipSoftDeath"); } 
+                                        }
+                                        // Vehicle Destruction
+                                        else if (level.Contains("2"))
+                                        {
+                                            if (ConfigManager.SoundON == 1) { PlaySound("EnemyShipDestruction"); }
+                                        }
+                                    }
+                                    else if (e.Data.Contains("NewSoftVehicleKill="))
+                                    {
+                                        if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleKill", e.Data); }
+                                    }
+                                    else if (e.Data.Contains("NewVehicleKill="))
+                                    {
+                                        if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleKill", e.Data); }
+                                    }
+                                    //Destruction of a Ship while the Player is in it
+                                    else if (e.Data.Contains("VehicleDestructionDeath_level="))
+                                    {
+                                        // Preventin an Output
+                                    }
+                                    else if (e.Data.Contains("NewSoftVehicleDeath="))
+                                    {
+                                        if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDeath", e.Data); }
+                                    }
+                                    else if (e.Data.Contains("NewVehicleDeath="))
+                                    {
+                                        if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDeath", e.Data); }
+                                    }
+                                    //Self caused destruction of a Ship while the Player is in it
+                                    else if (e.Data.Contains("VehicleDestructionSuicide_level="))
+                                    {
+                                        // Preventin an Output
+                                    }
+                                    else if (e.Data.Contains("NewSoftVehicleOther="))
+                                    {
+                                        // Preventin an Output
+                                    }
+                                    else if (e.Data.Contains("NewVehicleOther="))
+                                    {
+                                        // Preventin an Output
+                                    }
+                                    //Destruction of the Players ship
+                                    else if (e.Data.Contains("VehicleDestructionOwn_level="))
+                                    {
+                                        string level = e.Data.Split('=')[1].Trim();
+                                        // Vehicle SoftDeath
+                                        if (level.Contains("1"))
+                                        {
+                                            if (ConfigManager.SoundON == 1) { PlaySound("PlayerShipSoftDeath"); } 
+                                        }
+                                        // Vehicle Destruction
+                                        else if (level.Contains("2"))
+                                        {
+                                            if (ConfigManager.SoundON == 1) { PlaySound("PlayerShipDestruction"); }
+                                        }
+                                    }
+                                    else if (e.Data.Contains("NewSoftVehicleDestruction="))
+                                    {
+                                        if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDestruction", e.Data); }
+                                    }
+                                    else if (e.Data.Contains("NewVehicleDestruction="))
+                                    {
+                                        if (ConfigManager.VehicleDestruction == 1) { HandleKillEvent("VehicleDestruction", e.Data); }
+                                    }
+                                }
                                 else
                                 {
                                     string currentText = DebugPanel.Text;
